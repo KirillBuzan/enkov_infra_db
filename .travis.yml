@@ -2,7 +2,7 @@ language: python
 python:
   - '2.7'
 install:
-  - pip install ansible==2.4.0 molecule apache-libcloud
+  - pip install ansible==2.3.0 molecule apache-libcloud
 script:
   - molecule create
   - molecule converge
