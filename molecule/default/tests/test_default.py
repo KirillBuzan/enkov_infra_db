@@ -5,10 +5,18 @@ import testinfra.utils.ansible_runner
 testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     os.environ['MOLECULE_INVENTORY_FILE']).get_hosts('all')
 
+# check if MongoDB is enabled and running
+def test_mongo_running_and_enabled(host):
+    mongo = host.service("mongod")
+    assert mongo.is_running
+    assert mongo.is_enabled
 
-def test_hosts_file(host):
-    f = host.file('/etc/hosts')
+# check if configuration file contains the required line
+def test_config_file(File):
+    config_file = File('/etc/mongod.conf')
+    assert config_file.contains('bindIp: 127.0.0.1')
+    assert config_file.is_file
 
-    assert f.exists
-    assert f.user == 'root'
-    assert f.group == 'root'
+def test_mongo_listen(Socket):
+    socket = Socket('tcp://127.0.0.1:27017')
+    assert socket.is_listening
