@@ -1,38 +1,35 @@
-Role Name
-=========
-asd
-A brief description of the role goes here.
+## Проверка роли с помощь travis
 
-Requirements
-------------
+Для того чтобы все заработало нужно выполнить следующие действия
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+```bash
+wget https://raw.githubusercontent.com/vitkhab/gce_test/c98d97ea79bacad23fd26106b52dee0d21144944/.travis.yml
 
-Role Variables
---------------
+# генерируем ключ для подключения по SSH
+ssh-keygen -t rsa -f google_compute_engine -C 'travis' -q -N ''
+# Создаем ключ в метадате проекта infra в GCP
+pbcopy < google_compute_engine.pub # OSX specific command
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+# Должен быть предварительно создан сервисный аккаунт и скачаны креды (credentials.json)
+# Должна быть предварительно подключена данная репа в тревисе
+travis encrypt GCE_SERVICE_ACCOUNT_EMAIL='ci-test@infra-179032.iam.gserviceaccount.com' --add
+travis encrypt GCE_CREDENTIALS_FILE="$(pwd)/credentials.json" --add
+travis encrypt GCE_PROJECT_ID='infra-179032' --add
 
-Dependencies
-------------
+# шифруем файлы
+tar cvf secrets.tar credentials.json google_compute_engine
+travis login
+travis encrypt-file secrets.tar --add
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+# пушим и проверяем изменения
+git commit -m 'Added Travis integration'
+git push
+```
 
-Example Playbook
-----------------
+Так же надо поправить molecule/default/playbook.yml, добавив в него правильное имя роли.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Для добавления оповещение в slack нужно выполнить команду:
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
-
-License
--------
-
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+```bash
+travis encrypt "devops-team-otus:SLACK_TOKEN" --add notifications.slack -r GITHUB_ORG/GITHUB_REPO
+```
